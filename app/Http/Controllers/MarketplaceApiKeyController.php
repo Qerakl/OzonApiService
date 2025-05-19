@@ -39,4 +39,27 @@ class MarketplaceApiKeyController extends Controller
         return redirect()->route('marketplace.api-keys.index')
             ->with('success', 'Сервис успешно добавлен.');
     }
+
+    public function update(Request $request, MarketplaceApiKey $apiKey)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'client_id' => 'nullable|string|max:255',
+            'api_key' => 'required|string|max:255',
+        ]);
+
+        $apiKey->update($data);
+
+        return redirect()->route('marketplace.api-keys.index')
+            ->with('success', 'Сервис обновлён.');
+    }
+
+    public function destroy(MarketplaceApiKey $apiKey)
+    {
+        $apiKey->delete();
+
+        return redirect()->route('marketplace.api-keys.index')
+            ->with('success', 'Сервис удалён.');
+    }
+
 }

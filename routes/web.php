@@ -15,10 +15,10 @@ Route::get('dashboard', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('marketplace')->name('marketplace.')->group(function () {
-        // Список API-ключей: /marketplace/api-keys
-        Route::get('/api-keys', [MarketplaceApiKeyController::class, 'index'])
-            ->name('api-keys.index');
+        Route::get('/api-keys', [MarketplaceApiKeyController::class, 'index'])->name('api-keys.index');
         Route::post('/api-keys', [MarketplaceApiKeyController::class, 'store'])->name('api-keys.store');
+        Route::put('/api-keys/{apiKey}', [MarketplaceApiKeyController::class, 'update'])->name('api-keys.update');
+        Route::delete('/api-keys/{apiKey}', [MarketplaceApiKeyController::class, 'destroy'])->name('api-keys.destroy');
     });
 
 });

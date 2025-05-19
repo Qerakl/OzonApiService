@@ -5,30 +5,35 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { KeyRound, BarChart2, LineChart, LayoutGrid, Database } from 'lucide-vue-next';
+import { KeyRound, BarChart2, LineChart, LayoutGrid, Settings, LogOut } from 'lucide-vue-next'; // импорт иконок
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Api',
         href: '/marketplace/api-keys',
-        icon: KeyRound, // Подходит, можно оставить (ключ = доступ к API)
+        icon: KeyRound,
     },
     {
         title: 'Прогноз',
         href: '',
-        icon: LineChart, // Больше соответствует идее "прогнозирования"
+        icon: LineChart,
     },
     {
         title: 'Графики',
         href: '',
-        icon: BarChart2, // Классическая иконка для графиков
+        icon: BarChart2,
     },
     {
         title: 'Dashboard',
         href: '/dashboard',
-        icon: LayoutGrid, // Подходит, стандартная иконка панели
+        icon: LayoutGrid,
     },
+];
+
+// Добавляем footerNavItems, чтобы не было ошибки undefined
+const footerNavItems: NavItem[] = [
+
 ];
 </script>
 
