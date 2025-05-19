@@ -17,4 +17,11 @@ class MarketplaceApiKey extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    // App\Models\Marketplace
+    public function apiKey()
+    {
+        return $this->hasOne(MarketplaceApiKey::class, 'client_id', 'client_id');
+    }
+
 }

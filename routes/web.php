@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\MarketplaceApiKeyController;
+use App\Http\Controllers\MarketplaceForecastController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -20,6 +21,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/api-keys/{apiKey}', [MarketplaceApiKeyController::class, 'update'])->name('api-keys.update');
         Route::delete('/api-keys/{apiKey}', [MarketplaceApiKeyController::class, 'destroy'])->name('api-keys.destroy');
     });
+
+
+    Route::get('/marketplace/forecasts', [MarketplaceForecastController::class, 'index'])->name('marketplace.forecasts.index');
+    Route::post('/marketplace/forecasts/calculate', [MarketplaceForecastController::class, 'calculate'])->name('marketplace.forecasts.calculate');
+
+
 
 });
 

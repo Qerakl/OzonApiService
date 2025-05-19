@@ -16,7 +16,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Прогноз',
-        href: '',
+        href: '/marketplace/forecasts',
         icon: LineChart,
     },
     {
