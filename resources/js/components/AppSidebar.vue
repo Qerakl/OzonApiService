@@ -5,27 +5,29 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { KeyRound, BarChart2, LineChart, LayoutGrid, Database } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
     {
+        title: 'Api',
+        href: '',
+        icon: KeyRound, // Подходит, можно оставить (ключ = доступ к API)
+    },
+    {
+        title: 'Прогноз',
+        href: '',
+        icon: LineChart, // Больше соответствует идее "прогнозирования"
+    },
+    {
+        title: 'Графики',
+        href: '',
+        icon: BarChart2, // Классическая иконка для графиков
+    },
+    {
         title: 'Dashboard',
         href: '/dashboard',
-        icon: LayoutGrid,
-    },
-];
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
+        icon: LayoutGrid, // Подходит, стандартная иконка панели
     },
 ];
 </script>
