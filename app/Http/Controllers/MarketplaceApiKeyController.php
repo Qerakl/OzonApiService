@@ -20,4 +20,23 @@ class MarketplaceApiKeyController extends Controller
             'services' => $services,
         ]);
     }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'client_id' => 'nullable|string|max:255',
+            'api_key' => 'required|string|max:255',
+        ]);
+
+        MarketplaceApiKey::create([
+            'user_id' => Auth::id(),
+            'name' => $data['name'],
+            'client_id' => $data['client_id'],
+            'api_key' => $data['api_key'],
+        ]);
+
+        return redirect()->route('marketplace.api-keys.index')
+            ->with('success', 'Сервис успешно добавлен.');
+    }
 }

@@ -18,6 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Список API-ключей: /marketplace/api-keys
         Route::get('/api-keys', [MarketplaceApiKeyController::class, 'index'])
             ->name('api-keys.index');
+        Route::post('/api-keys', [MarketplaceApiKeyController::class, 'store'])->name('api-keys.store');
     });
 
 });
