@@ -11,7 +11,7 @@ import AppLogo from './AppLogo.vue';
 const mainNavItems: NavItem[] = [
     {
         title: 'Api',
-        href: '',
+        href: '/marketplace/api-keys',
         icon: KeyRound, // Подходит, можно оставить (ключ = доступ к API)
     },
     {
