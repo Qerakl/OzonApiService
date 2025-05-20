@@ -12,7 +12,7 @@ class CreateMarketplaceForecastsTable extends Migration
             $table->id();
 
             // Внешний ключ на площадку
-            $table->foreignId('marketplace_api_key_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('marketplace_api_key_id')->nullable()->constrained()->cascadeOnDelete();
 
             $table->string('article');
             $table->string('name');

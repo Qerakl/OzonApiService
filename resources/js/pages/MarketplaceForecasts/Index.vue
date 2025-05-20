@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
+import axios from 'axios';
 
 // Пропсы
 const props = defineProps<{
@@ -22,11 +23,10 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Прогнозы', href: '/forecasts' }
 ];
 
-// Основные переменные
+// Переменные
 const marketplaces = ref(props.marketplaces);
 const forecasts = ref(props.forecasts);
 
-// Остальные состояния
 const deliveryDate = ref('');
 const stockDays = ref(1);
 const dataSource = ref<'csv' | 'marketplace' | null>(null);
@@ -34,44 +34,61 @@ const csvFile = ref<File | null>(null);
 const selectedMarketplaceId = ref<number | null>(null);
 const loading = ref(false);
 
-// Временная заглушка расчёта
+// Обработчик прогноза
 async function calculateForecast() {
     if (!dataSource.value) {
         alert('Выберите источник данных');
         return;
     }
 
+    const formData = new FormData();
+
+    formData.append('data_source', dataSource.value);
+    if (deliveryDate.value) formData.append('delivery_date', deliveryDate.value);
+    if (stockDays.value) formData.append('stock_days', stockDays.value.toString());
+
     if (dataSource.value === 'csv') {
         if (!csvFile.value) {
             alert('Загрузите CSV-файл');
             return;
         }
-    } else if (dataSource.value === 'marketplace') {
+
+        formData.append('csv_file', csvFile.value);
+    }
+
+    if (dataSource.value === 'marketplace') {
         if (!selectedMarketplaceId.value) {
-            alert('Выберите площадку из списка');
+            alert('Выберите площадку');
             return;
         }
-    }
 
-    if (!deliveryDate.value) {
-        alert('Введите дату поставки');
-        return;
-    }
+        if (!deliveryDate.value) {
+            alert('Введите дату поставки');
+            return;
+        }
 
-    if (stockDays.value < 1) {
-        alert('Количество дней должно быть не менее 1');
-        return;
+        formData.append('marketplace_id', selectedMarketplaceId.value.toString());
     }
 
     loading.value = true;
+    try {
+        const response = await axios.post('/marketplace/forecasts/calculate', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
 
-    // Заглушка
-    await new Promise((r) => setTimeout(r, 1500));
-    alert('Расчёт произведён (заглушка)');
-
-    loading.value = false;
+        // Вариант обновления страницы или возврата новых данных
+        window.location.reload();
+    } catch (error) {
+        console.error('Ошибка при расчёте прогноза:', error);
+        alert('Произошла ошибка при отправке формы');
+    } finally {
+        loading.value = false;
+    }
 }
 </script>
+
 
 <template>
     <Head title="Прогнозы по площадкам" />
@@ -121,8 +138,8 @@ async function calculateForecast() {
                 </select>
             </section>
 
-            <!-- Дата поставки и дней загрузки -->
-            <section class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-md">
+            <!-- Дата поставки и дней загрузки (только если НЕ выбран CSV) -->
+            <section v-if="dataSource === 'marketplace'" class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-md">
                 <div>
                     <label class="block mb-1 font-medium text-gray-700">Дата поставки</label>
                     <input type="date" v-model="deliveryDate"
