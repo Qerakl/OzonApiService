@@ -110,7 +110,6 @@ async function calculateForecast() {
                     </label>
                 </div>
             </section>
-
             <!-- Если выбран CSV -->
             <section v-if="dataSource === 'csv'" class="space-y-3">
                 <h2 class="text-xl font-semibold text-gray-800">2. Загрузите CSV-файл</h2>
