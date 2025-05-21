@@ -42,7 +42,7 @@ class MarketplaceForecastController extends Controller
                 'file',
                 Storage::get($filePath),
                 basename($filePath)
-            )->post(env('FORECAST_API_URL', 'http://localhost:8000/analyze/file'));
+            )->post(env('FORECAST_API_URL', 'http://bot:8000/analyze/file'));
 
             Log::info('Ответ от Forecast API', [
                 'status' => $response->status(),
