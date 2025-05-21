@@ -28,4 +28,12 @@ export default defineConfig({
             'ziggy-js': resolve(__dirname, 'vendor/tightenco/ziggy'),
         },
     },
+    server: {
+        host: '0.0.0.0', // Слушать на всех интерфейсах
+        port: 5173,      // Укажите порт, если нужно
+        hmr: {
+            host: 'localhost', // Укажите адрес хоста (или IP вашей машины)
+        },
+    },
+
 });
