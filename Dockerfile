@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm \
     git \
+    git \
     curl \
     gnupg \
     cron \
@@ -24,7 +25,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Создаем рабочую директорию
 WORKDIR /var/www/html
 
-COPY php.ini /usr/local/etc/php/php.ini
+COPY php.ini /usr/local/etc/php/conf.d/
 
 # Копируем файлы проекта
 COPY . /var/www/html
