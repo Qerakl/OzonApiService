@@ -33,62 +33,83 @@ const dataSource = ref<'csv' | 'marketplace' | null>(null);
 const csvFile = ref<File | null>(null);
 const selectedMarketplaceId = ref<number | null>(null);
 const loading = ref(false);
+const deliveryDateFrom = ref('');
+const deliveryDateTo = ref('');
 
-// Обработчик прогноза
 async function calculateForecast() {
-    if (!dataSource.value) {
-        alert('Выберите источник данных');
+    loading.value = true;
+
+    try {
+        const formData = new FormData();
+        formData.append('data_source', dataSource.value || '');
+
+        if (dataSource.value === 'csv') {
+            if (!csvFile.value) {
+                alert('Выберите CSV-файл');
+                loading.value = false;
+                return;
+            }
+            formData.append('csv_file', csvFile.value);
+        }
+
+        if (dataSource.value === 'marketplace') {
+            if (!selectedMarketplaceId.value || !deliveryDateFrom.value || !deliveryDateTo.value) {
+                alert('Заполните все поля');
+                loading.value = false;
+                return;
+            }
+
+            formData.append('marketplace_id', selectedMarketplaceId.value.toString());
+            formData.append('delivery_date_from', deliveryDateFrom.value);
+            formData.append('delivery_date_to', deliveryDateTo.value);
+        }
+
+        const response = await axios.post('/marketplace/forecasts/calculate', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        console.log('Ответ от сервера:', response.data);
+        forecasts.value = response.data.forecasts ?? [];
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert('Ошибка при отправке данных на сервер');
+    } finally {
+        loading.value = false;
+    }
+}
+
+
+// Прогноз по CSV-файлу
+async function calculateForecastFromCSV() {
+    if (!csvFile.value) {
+        alert('Выберите CSV-файл');
         return;
     }
 
     const formData = new FormData();
-
-    formData.append('data_source', dataSource.value);
-    if (deliveryDate.value) formData.append('delivery_date', deliveryDate.value);
-    if (stockDays.value) formData.append('stock_days', stockDays.value.toString());
-
-    if (dataSource.value === 'csv') {
-        if (!csvFile.value) {
-            alert('Загрузите CSV-файл');
-            return;
-        }
-
-        formData.append('csv_file', csvFile.value);
-    }
-
-    if (dataSource.value === 'marketplace') {
-        if (!selectedMarketplaceId.value) {
-            alert('Выберите площадку');
-            return;
-        }
-
-        if (!deliveryDate.value) {
-            alert('Введите дату поставки');
-            return;
-        }
-
-        formData.append('marketplace_id', selectedMarketplaceId.value.toString());
-    }
+    formData.append('file', csvFile.value);
 
     loading.value = true;
+
     try {
         const response = await axios.post('/marketplace/forecasts/calculate', formData, {
             headers: {
-                'Content-Type': 'multipart/form-data'
-            }
+                'Content-Type': 'multipart/form-data',
+            },
         });
 
-        // Вариант обновления страницы или возврата новых данных
-        window.location.reload();
+        console.log('Ответ от сервера:', response.data);
+        forecasts.value = response.data.forecasts ?? [];
     } catch (error) {
-        console.error('Ошибка при расчёте прогноза:', error);
-        alert('Произошла ошибка при отправке формы');
+        console.error('Ошибка при отправке CSV:', error);
+        alert('Не удалось рассчитать прогноз по CSV');
     } finally {
         loading.value = false;
     }
 }
 </script>
-
 
 <template>
     <Head title="Прогнозы по площадкам" />
@@ -110,26 +131,25 @@ async function calculateForecast() {
                     </label>
                 </div>
             </section>
+
             <!-- Если выбран CSV -->
             <section v-if="dataSource === 'csv'" class="space-y-3">
                 <h2 class="text-xl font-semibold text-gray-800">2. Загрузите CSV-файл</h2>
-                <input type="file" accept=".csv,text/csv" @change="e => csvFile = e.target.files ? e.target.files[0] : null"
-                       class="block w-full text-sm text-gray-700
-            file:mr-4 file:py-2 file:px-4
-            file:rounded file:border-0
-            file:text-sm file:font-semibold
-            file:bg-indigo-50 file:text-indigo-700
-            hover:file:bg-indigo-100
-          " />
+                <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    @change="e => csvFile = e.target.files ? e.target.files[0] : null"
+                    class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                />
                 <p v-if="csvFile" class="text-sm text-gray-600 mt-1">Выбран файл: <strong>{{ csvFile.name }}</strong></p>
             </section>
 
             <!-- Если выбран маркетплейс -->
             <section v-if="dataSource === 'marketplace'" class="space-y-3">
                 <h2 class="text-xl font-semibold text-gray-800">2. Выберите площадку</h2>
-                <select v-model="selectedMarketplaceId"
-                        class="w-full border border-gray-300 rounded px-3 py-2 text-gray-700
-            focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <select
+                    v-model="selectedMarketplaceId"
+                    class="w-full border border-gray-300 rounded px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="" disabled>Выберите площадку</option>
                     <option v-for="mp in marketplaces" :key="mp.id" :value="mp.id">
                         {{ mp.name }} ({{ mp.client_id || '—' }})
@@ -137,27 +157,26 @@ async function calculateForecast() {
                 </select>
             </section>
 
-            <!-- Дата поставки и дней загрузки (только если НЕ выбран CSV) -->
+            <!-- Диапазон дат -->
             <section v-if="dataSource === 'marketplace'" class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-md">
                 <div>
-                    <label class="block mb-1 font-medium text-gray-700">Дата поставки</label>
-                    <input type="date" v-model="deliveryDate"
-                           class="w-full border border-gray-300 rounded px-3 py-2
-              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                    <label class="block mb-1 font-medium text-gray-700">Дата от</label>
+                    <input type="date" v-model="deliveryDateFrom"
+                           class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
                 </div>
                 <div>
-                    <label class="block mb-1 font-medium text-gray-700">Дней загрузки склада</label>
-                    <input type="number" v-model.number="stockDays" min="1"
-                           class="w-full border border-gray-300 rounded px-3 py-2
-              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                    <label class="block mb-1 font-medium text-gray-700">Дата до</label>
+                    <input type="date" v-model="deliveryDateTo"
+                           class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
                 </div>
             </section>
 
+            <!-- Кнопка запуска -->
             <div>
-                <button @click="calculateForecast" :disabled="loading"
-                        class="inline-flex items-center justify-center bg-indigo-600 text-white px-6 py-3 rounded-md
-            font-semibold hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed
-            transition-colors duration-200 ease-in-out">
+                <button
+                    @click="calculateForecast"
+                    :disabled="loading"
+                    class="inline-flex items-center justify-center bg-indigo-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed transition-colors duration-200 ease-in-out">
                     <svg v-if="loading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
                          viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

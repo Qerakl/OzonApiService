@@ -25,7 +25,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/marketplace/forecasts', [MarketplaceForecastController::class, 'index'])->name('marketplace.forecasts.index');
     Route::post('/marketplace/forecasts/calculate', [MarketplaceForecastController::class, 'calculate'])->name('marketplace.forecasts.calculate');
-
+    Route::post('/marketplace/forecasts/period', [MarketplaceForecastController::class, 'forecastByPeriod']);
 
 
 });

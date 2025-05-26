@@ -6,6 +6,7 @@ use App\Models\MarketplaceApiKey;
 use App\Models\MarketplaceForecast;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -73,6 +74,25 @@ class MarketplaceForecastController extends Controller
             return null;
         }
     }
+    public function forecastByPeriod(Request $request)
+    {
+        $validated = $request->validate([
+            'marketplace_id' => 'required|exists:marketplace_api_keys,id',
+            'delivery_date_from' => 'required|date|before_or_equal:delivery_date_to',
+            'delivery_date_to' => 'required|date|after_or_equal:delivery_date_from',
+        ]);
+        $ozonKey = MarketplaceApiKey::find($request->marketplace_id);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'delivery_date_from' => $request->delivery_date_from,
+                'delivery_date_to' => $request->delivery_date_to,
+                'ClientId' => $ozonKey->client_id,
+                'ApiKey' => $ozonKey->api_key,
+            ],
+        ]);
+    }
 
 
     public function calculate(Request $request)
@@ -80,61 +100,99 @@ class MarketplaceForecastController extends Controller
         $request->validate([
             'delivery_date' => 'nullable|date_format:Y-m-d',
             'stock_days' => 'nullable|integer|min:1',
-            'data_source' => 'nullable|in:csv,marketplace,ozon',
+            'data_source' => 'required|in:csv,marketplace,ozon',
         ]);
 
-        if ($request->data_source === 'csv' || $request->data_source === 'ozon') {
+        if ($request->data_source === 'csv') {
             $request->validate([
                 'csv_file' => 'required|file|mimes:csv,txt',
             ]);
-        } elseif ($request->data_source === 'marketplace') {
+        }
+
+        if (in_array($request->data_source, ['marketplace', 'ozon'])) {
             $request->validate([
                 'marketplace_id' => 'required|exists:marketplace_api_keys,id',
+                'delivery_date_from' => 'required|date',
+                'delivery_date_to' => 'required|date|after_or_equal:delivery_date_from',
             ]);
         }
 
         $forecasts = [];
-
-        // --- Получение данных из API ---
         $apiResponse = null;
-        if ($request->hasFile('csv_file')) {
+
+        if ($request->data_source === 'csv' && $request->hasFile('csv_file')) {
             $path = $request->file('csv_file')->store('temp');
             $apiResponse = $this->sendToForecastApi($path);
         }
 
-        // --- Обработка ответа и сохранение в БД ---
+        if (in_array($request->data_source, ['marketplace', 'ozon'])) {
+            // Здесь можно переключать поведение под разные маркетплейсы (сейчас только ozon)
+            $ozonKey = MarketplaceApiKey::find($request->marketplace_id);
+            $headers = [
+                'Client-Id' => $ozonKey->client_id,
+                'Api-Key' => $ozonKey->api_key,
+                'Content-Type' => 'application/json',
+            ];
+
+            $reportRequestBody = [
+                'filter' => [
+                    'processed_at_from' => now()->subDays(30)->toIso8601String(),
+                    'processed_at_to' => now()->toIso8601String(),
+                    'delivery_schema' => ['fbo'],
+                ],
+                'language' => 'DEFAULT',
+            ];
+
+            $reportCreateResponse = Http::withHeaders($headers)
+                ->post('https://api-seller.ozon.ru/v1/report/postings/create', $reportRequestBody);
+
+            if (!$reportCreateResponse->successful()) {
+                return response()->json(['error' => 'Ошибка создания отчета Ozon'], 500);
+            }
+
+            $reportCode = $reportCreateResponse->json('result.code');
+
+            sleep(2); // дать отчёту немного времени
+            $reportInfoResponse = Http::withHeaders($headers)
+                ->post('https://api-seller.ozon.ru/v1/report/info', ['code' => $reportCode]);
+
+            if (!$reportInfoResponse->successful()) {
+                return response()->json(['error' => 'Ошибка получения отчета Ozon'], 500);
+            }
+
+            $reportStatus = $reportInfoResponse->json('result.status');
+            $fileUrl = $reportInfoResponse->json('result.file');
+
+            if ($reportStatus !== 'success' || empty($fileUrl)) {
+                return response()->json(['error' => 'Отчет ещё не готов'], 400);
+            }
+
+            $csvContents = file_get_contents($fileUrl);
+            if ($csvContents === false) {
+                return response()->json(['error' => 'Не удалось скачать CSV'], 500);
+            }
+
+            $filename = 'ozon_reports/' . Str::uuid() . '.csv';
+            Storage::put($filename, $csvContents);
+
+            $apiResponse = $this->sendToForecastApi($filename);
+        }
+
+        // Обработка ответа
         if (!empty($apiResponse) && isset($apiResponse['results'])) {
             $forecasts = collect($apiResponse['results'])->map(function ($item, $index) {
-                // Сохраняем каждый прогноз в БД
-                try {
-                    MarketplaceForecast::create([
-                        'article' => $item['Артикул'],
-                        'name' => $item['Название'] ?? 'N/A',
-                        'current_stock' => $item['Текущий остаток'] ?? 0,
-                        'forecast' => $item['Прогноз'] ?? 0,
-                        'recommendations' => $item['Рекомендации'] ?? 0,
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::error('Ошибка при сохранении прогноза: ' . $e->getMessage());
-                }
-
-
-
                 return [
                     'id' => $index + 1,
                     'article' => $item['Артикул'] ?? 'N/A',
                     'name' => $item['Название'] ?? 'N/A',
                     'current_stock' => $item['Текущий остаток'] ?? 0,
                     'forecast' => $item['Прогноз'] ?? 0,
-                    'recommendations' => $item['Рекомендации'] ?? 0,
+                    'recommendations' => $item['Рекомендации'] ?? '',
                 ];
             })->toArray();
         }
 
-        $marketplaces = MarketplaceApiKey::select('id', 'name', 'client_id')->get();
-
-        return Inertia::render('MarketplaceForecasts/Index', [
-            'marketplaces' => $marketplaces,
+        return response()->json([
             'forecasts' => $forecasts,
         ]);
     }
