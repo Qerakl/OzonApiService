@@ -21,7 +21,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Графики',
-        href: '',
+        href: '/marketplace/forecasts/charts',
         icon: BarChart2,
     },
     {
