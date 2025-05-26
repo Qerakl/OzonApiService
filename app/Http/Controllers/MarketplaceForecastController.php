@@ -180,16 +180,30 @@ class MarketplaceForecastController extends Controller
 
         // Обработка ответа
         if (!empty($apiResponse) && isset($apiResponse['results'])) {
-            $forecasts = collect($apiResponse['results'])->map(function ($item, $index) {
-                return [
-                    'id' => $index + 1,
-                    'article' => $item['Артикул'] ?? 'N/A',
+            $forecasts = [];
+
+            foreach ($apiResponse['results'] as $item) {
+                $article = $item['Артикул'] ?? 'N/A';
+                $forecastData = [
+                    'marketplace_api_key_id' => $request->marketplace_id ?? null,
+                    'article' => $article,
                     'name' => $item['Название'] ?? 'N/A',
                     'current_stock' => $item['Текущий остаток'] ?? 0,
                     'forecast' => $item['Прогноз'] ?? 0,
                     'recommendations' => $item['Рекомендации'] ?? '',
                 ];
-            })->toArray();
+
+                // Обновление или создание записи
+                $forecast = MarketplaceForecast::updateOrCreate(
+                    [
+                        'marketplace_api_key_id' => $forecastData['marketplace_api_key_id'],
+                        'article' => $forecastData['article'],
+                    ],
+                    $forecastData
+                );
+
+                $forecasts[] = $forecast->toArray();
+            }
         }
 
         return response()->json([
