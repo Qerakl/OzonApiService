@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MarketplaceApiKey;
 use App\Models\MarketplaceForecast;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -16,7 +17,7 @@ class MarketplaceForecastController extends Controller
     public function index()
     {
         // Получаем все маркетплейсы
-        $marketplaces = MarketplaceApiKey::select('id', 'name', 'client_id')->get();
+        $marketplaces = MarketplaceApiKey::where('user_id', Auth::id())->select('id', 'name', 'client_id')->get();
 
         // Получаем прогнозы с привязкой к маркетплейсам
         $forecasts = MarketplaceForecast::with('marketplaceApiKey:id,name')

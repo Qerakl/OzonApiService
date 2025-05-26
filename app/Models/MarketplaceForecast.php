@@ -8,6 +8,7 @@ class MarketplaceForecast extends Model
 {
     protected $fillable = [
         'marketplace_api_key_id',
+        'user_id',
         'article',
         'name',
         'current_stock',
