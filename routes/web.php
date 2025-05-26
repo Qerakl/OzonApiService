@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MarketplaceApiKeyController;
 use App\Http\Controllers\MarketplaceForecastController;
 use Illuminate\Support\Facades\Route;
@@ -8,10 +9,6 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
-
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -28,6 +25,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/marketplace/forecasts/period', [MarketplaceForecastController::class, 'forecastByPeriod']);
 
     Route::get('/marketplace/forecasts/charts', [App\Http\Controllers\ForecastController::class, 'index']);
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 });
 
