@@ -20,4 +20,9 @@ class MarketplaceForecast extends Model
     {
         return $this->belongsTo(MarketplaceApiKey::class);
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

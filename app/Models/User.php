@@ -49,4 +49,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(MarketplaceApiKey::class);
     }
+
+    public function forecasts()
+    {
+        return $this->hasMany(MarketplaceForecast::class);
+    }
 }
