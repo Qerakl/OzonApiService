@@ -21,6 +21,7 @@ class MarketplaceForecastController extends Controller
 
         // Получаем прогнозы с привязкой к маркетплейсам
         $forecasts = MarketplaceForecast::with('marketplaceApiKey:id,name')
+            ->where('user_id', Auth::id())
             ->select('id', 'marketplace_api_key_id', 'article', 'name', 'current_stock', 'forecast', 'recommendations')
             ->get();
 
@@ -187,6 +188,7 @@ class MarketplaceForecastController extends Controller
                 $article = $item['Артикул'] ?? 'N/A';
                 $forecastData = [
                     'marketplace_api_key_id' => $request->marketplace_id ?? null,
+                    'user_id' => Auth::id(),
                     'article' => $article,
                     'name' => $item['Название'] ?? 'N/A',
                     'current_stock' => $item['Текущий остаток'] ?? 0,
