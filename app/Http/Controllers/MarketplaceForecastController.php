@@ -23,6 +23,7 @@ class MarketplaceForecastController extends Controller
         $forecasts = MarketplaceForecast::with('marketplaceApiKey:id,name')
             ->where('user_id', Auth::id())
             ->select('id', 'marketplace_api_key_id', 'article', 'name', 'current_stock', 'forecast', 'recommendations')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return Inertia::render('MarketplaceForecasts/Index', [
@@ -199,11 +200,13 @@ class MarketplaceForecastController extends Controller
                 // Обновление или создание записи
                 $forecast = MarketplaceForecast::updateOrCreate(
                     [
+                        'user_id' => $forecastData['user_id'], // <-- добавили user_id в условие поиска
                         'marketplace_api_key_id' => $forecastData['marketplace_api_key_id'],
                         'article' => $forecastData['article'],
                     ],
                     $forecastData
                 );
+
 
                 $forecasts[] = $forecast->toArray();
             }

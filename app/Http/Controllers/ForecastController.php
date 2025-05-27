@@ -10,14 +10,24 @@ use Inertia\Inertia;
 
 class ForecastController extends Controller
 {
-    public function index()
+    // ForecastController.php
+    public function index(Request $request)
     {
-        $forecasts = MarketplaceForecast::where('user_id', Auth::id())
+        $perPage = $request->input('per_page', 20); // значение по умолчанию
+        $forecasts = \App\Models\MarketplaceForecast::where('user_id', Auth::id())
             ->select('article', 'name', 'current_stock', 'forecast')
-            ->get();
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage)
+            ->appends(['per_page' => $perPage]); // сохраняем параметр в ссылках
 
         return Inertia::render('Grafics/ForecastsCharts', [
-            'forecasts' => $forecasts,
+            'forecasts' => $forecasts->items(),
+            'pagination' => [
+                'current_page' => $forecasts->currentPage(),
+                'last_page' => $forecasts->lastPage(),
+                'next_page_url' => $forecasts->nextPageUrl(),
+                'per_page' => $forecasts->perPage(),
+            ],
         ]);
     }
 

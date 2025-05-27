@@ -30,6 +30,7 @@ const page = usePage();
 const forecastsRaw = computed(() => page.props.forecasts);
 const hasMore = computed(() => page.props.hasMore);
 const limit = ref(page.props.limit);
+const pagination = computed(() => page.props.pagination);
 
 // 🔍 Фильтрация и сокращение
 const search = ref('');
@@ -42,11 +43,23 @@ const filteredForecasts = computed(() => {
         .slice(0, visibleCount.value);
 });
 
-const loadMore = () => {
-    visibleCount.value += 20;
-    if (visibleCount.value > forecastsRaw.value.length && hasMore.value) {
-        router.get('/dashboard', { limit: visibleCount.value }, { preserveState: true });
-    }
+const isLoading = ref(false);
+
+const loadMore = async () => {
+    if (!pagination.value?.next_page_url) return;
+
+    isLoading.value = true;
+    await router.get(pagination.value.next_page_url, {}, {
+        preserveState: true,
+        preserveScroll: true,
+        only: ['forecasts', 'pagination'],
+        onSuccess: () => {
+            visibleCount.value += pagination.value.per_page;
+        },
+        onFinish: () => {
+            isLoading.value = false;
+        }
+    });
 };
 
 const labels = computed(() =>
@@ -120,6 +133,12 @@ const lowStockChart = computed(() => {
         }],
     };
 });
+const accumulatedForecasts = ref([...forecastsRaw.value]);
+
+watch(forecastsRaw, (newVal) => {
+    accumulatedForecasts.value = [...accumulatedForecasts.value, ...newVal];
+});
+
 </script>
 <template>
     <Head title="Dashboard" />
